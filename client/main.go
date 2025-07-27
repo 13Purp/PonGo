@@ -1,8 +1,9 @@
 package main
 
+//client
 import (
+	"flag"
 	"fmt"
-	"math/rand"
 
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/imdraw"
@@ -12,13 +13,36 @@ import (
 	"golang.org/x/image/font/basicfont"
 )
 
+type GameState struct {
+	PaddleP1 Paddle
+	PaddleP2 Paddle
+	Ball     Ball
+	Score    Score
+	Input    uint8
+	Seq      uint64
+	fromOp   bool
+}
+
 func run() {
+	port := flag.Int("port", 30001, "local UDP port to bind to")
+	player := flag.Int("player", 1, "Player number: 1 or 2")
+
+	flag.Parse()
+	isPlayerOne := *player == 1
+
+	portNum := fmt.Sprintf(":%d", *port)
+	fmt.Println(isPlayerOne)
+
 	cfg := pixelgl.WindowConfig{
 		Title:  "Pong",
 		Bounds: pixel.R(0, 0, 800, 600),
 		VSync:  true,
 	}
 	window, err := pixelgl.NewWindow(cfg)
+	if err != nil {
+		panic(err)
+	}
+
 	const paddleWidth = 10.0
 	const paddleHeight = 100.0
 	score := Score{LeftScore: 0, RightScore: 0}
@@ -27,57 +51,30 @@ func run() {
 	leftPaddle := NewPaddle(20, 300, paddleWidth, paddleHeight)
 	rightPaddle := NewPaddle(770, 300, paddleWidth, paddleHeight)
 	ball := NewBall(400, 300, 10)
-	CPU := NewCPU(&rightPaddle, &ball)
-	ball.Vel = pixel.V(-2.5, rand.Float64()*4-2)
 
-	if err != nil {
-		panic(err)
+	gameState := GameState{
+		PaddleP1: leftPaddle,
+		PaddleP2: rightPaddle,
+		Ball:     ball,
+		Score:    score,
 	}
 
-	vsAi := true
-	for !window.Closed() {
-
-		window.Update()
-
-		if window.Pressed(pixelgl.KeyA) {
-
-			vsAi = false
-			break
-
-		}
-
-		if window.Pressed(pixelgl.KeyS) {
-			vsAi = true
-			break
-		}
-	}
+	udpHandler := NewUdpHandler(portNum, &gameState, isPlayerOne)
 
 	for !window.Closed() {
 		window.Clear(colornames.Black)
 
-		CalcScoreAndRespawn(&ball, &score)
+		MovePlayerOne(window, &leftPaddle, udpHandler)
 
-		MovePlayerOne(window, &leftPaddle)
-
-		if vsAi {
-			CPU.Move()
-		} else {
-			MovePlayerTwo(window, &rightPaddle)
-		}
+		udpHandler.SyncWithServerSeq(&gameState)
 
 		display := imdraw.New(nil)
-		DrawPaddle(window, display, leftPaddle)
-		DrawPaddle(window, display, rightPaddle)
-
-		HandleWallCollision(&ball)
-		HandlePaddleCollision(&ball, &leftPaddle)
-		HandlePaddleCollision(&ball, &rightPaddle)
-
-		ball.Move()
-		DrawBall(window, display, &ball)
+		DrawPaddle(window, display, gameState.PaddleP1)
+		DrawPaddle(window, display, gameState.PaddleP2)
+		DrawBall(window, display, &gameState.Ball)
 
 		scoreText.Clear()
-		fmt.Fprintf(scoreText, "%d : %d", score.LeftScore, score.RightScore)
+		fmt.Fprintf(scoreText, "%d : %d", gameState.Score.LeftScore, gameState.Score.RightScore)
 		scoreText.Draw(window, pixel.IM.Scaled(scoreText.Orig, 2))
 
 		display.Draw(window)
@@ -86,5 +83,7 @@ func run() {
 }
 
 func main() {
+
 	pixelgl.Run(run)
+
 }
