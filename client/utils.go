@@ -22,7 +22,7 @@ func clamp(value, min, max float64) float64 {
 	}
 	return value
 }
-func MovePlayerOne(win *pixelgl.Window, paddle *Paddle, udpHanlder *UdpHandler) {
+func MovePlayer(win *pixelgl.Window, udpHanlder *UdpHandler) {
 	if win.Pressed(pixelgl.KeyW) {
 		udpHanlder.CmdChan <- 1
 		return
@@ -32,6 +32,15 @@ func MovePlayerOne(win *pixelgl.Window, paddle *Paddle, udpHanlder *UdpHandler) 
 		return
 	}
 	udpHanlder.CmdChan <- 0
+}
+
+func MovePlayerOne(win *pixelgl.Window, paddle *Paddle) {
+	if win.Pressed(pixelgl.KeyUp) {
+		paddle.MoveUp(5, 600)
+	}
+	if win.Pressed(pixelgl.KeyDown) {
+		paddle.MoveDown(5, 0)
+	}
 }
 
 func MovePlayerTwo(win *pixelgl.Window, paddle *Paddle) {

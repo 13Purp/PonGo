@@ -4,7 +4,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net"
+
+	"github.com/faiface/pixel"
 )
 
 type GameState struct {
@@ -30,6 +33,12 @@ func getOpAdress(clientPairs map[string]ClientInfo, clientAddr *net.UDPAddr) *ne
 }
 
 func calcNextState(gameState *GameState, IsPlayer1 bool) {
+
+	if gameState.Ball.GetVel().X == 0 && gameState.Ball.GetVel().Y == 0 {
+		gameState.Ball.Vel = pixel.V(-2.5, rand.Float64()*4-2)
+
+	}
+
 	CalcScoreAndRespawn(&gameState.Ball, &gameState.Score)
 
 	if IsPlayer1 {

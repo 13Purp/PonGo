@@ -15,7 +15,7 @@ type UdpHandler struct {
 
 func NewUdpHandler(portNum string, gameState *GameState, isPlayerOne bool) *UdpHandler {
 	localAddr, _ := net.ResolveUDPAddr("udp", portNum) // fixed port
-	serverAddr, _ := net.ResolveUDPAddr("udp", "localhost:9999")
+	serverAddr, _ := net.ResolveUDPAddr("udp", "192.168.0.26:9999")
 	handler := &UdpHandler{
 		serverAddr:  serverAddr,
 		localAddr:   localAddr,
@@ -136,14 +136,9 @@ func (handler *UdpHandler) SyncWithServerSeq(gameState *GameState) {
 		gameState.Ball = newGameState.Ball
 		gameState.Input = 0
 		fmt.Print("newseqT", newGameState.Seq)
-		if (!newGameState.fromOp && handler.isPlayerOne) || (newGameState.fromOp && !handler.isPlayerOne) {
-			fmt.Println("P1 MOV", gameState.Seq)
-			gameState.PaddleP1 = newGameState.PaddleP1
-		}
-		if (!newGameState.fromOp && !handler.isPlayerOne) || (newGameState.fromOp && handler.isPlayerOne) {
-			fmt.Println("P2 MOV", gameState.Seq)
-			gameState.PaddleP2 = newGameState.PaddleP2
-		}
+		// Update both paddles from the server
+		gameState.PaddleP1 = newGameState.PaddleP1
+		gameState.PaddleP2 = newGameState.PaddleP2
 		gameState.Score = newGameState.Score
 		gameState.Seq = newGameState.Seq
 		gameState.fromOp = false
