@@ -106,35 +106,43 @@ func main() {
 	buf := make([]byte, 4096)
 	clientPairs := make(map[string]ClientInfo)
 
+	var persistentState GameState
+	persistentState.PaddleP1 = NewPaddle(20, 300, 10, 100)
+	persistentState.PaddleP2 = NewPaddle(770, 300, 10, 100)
+	persistentState.Ball = NewBall(400, 300, 10)
+	persistentState.Score = Score{LeftScore: 0, RightScore: 0}
+
 	for {
-
 		n, clientAddr, _ := conn.ReadFromUDP(buf)
-
 		paired := pairIncomingClients(clientPairs, clientAddr)
+		isPlayer1 := clientPairs[clientAddr.String()].IsPlayer1
 
-		var gameState GameState
-
-		err := json.Unmarshal(buf[:n], &gameState)
+		var incomingState GameState
+		err := json.Unmarshal(buf[:n], &incomingState)
 		if err != nil {
 			fmt.Println("Failed to parse GameState:", err)
 		}
 
-		if paired {
-			calcNextState(&gameState, clientPairs[clientAddr.String()].IsPlayer1)
+		if isPlayer1 {
+			persistentState.Input = incomingState.Input
+		} else {
+			persistentState.Input = incomingState.Input
 		}
 
-		gameState.fromOp = false
-		data, err := json.Marshal(gameState)
+		calcNextState(&persistentState, isPlayer1)
+
+		persistentState.fromOp = false
+		data, err := json.Marshal(persistentState)
 		if err != nil {
 			fmt.Println("Error marshaling GameState:", err)
 			return
 		}
-
 		conn.WriteToUDP(data, clientAddr)
-		gameState.fromOp = true
+
+		persistentState.fromOp = true
 		SEQ++
-		gameState.Seq = SEQ
-		data, err = json.Marshal(gameState)
+		persistentState.Seq = SEQ
+		data, err = json.Marshal(persistentState)
 		if err != nil {
 			fmt.Println("Error marshaling GameState:", err)
 			return

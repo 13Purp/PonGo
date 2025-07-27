@@ -64,7 +64,7 @@ func run() {
 	for !window.Closed() {
 		window.Clear(colornames.Black)
 
-		MovePlayer(window, udpHandler) // Only send input to server, do not move paddle locally
+		MovePlayer(window, udpHandler)
 
 		udpHandler.SyncWithServerSeq(&gameState)
 

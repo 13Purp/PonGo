@@ -105,10 +105,14 @@ func (handler *UdpHandler) SyncWithServerSeq(gameState *GameState) {
 
 	gameState.Input = input
 	gameState.fromOp = false
+	if handler.isPlayerOne {
+		gameState.PaddleP2 = Paddle{}
+	} else {
+		gameState.PaddleP1 = Paddle{}
+	}
 	data, err := json.Marshal(gameState)
 	if err != nil {
 		fmt.Println("Error marshaling GameState:", err)
-
 	}
 
 	_, err = conn.Write(data)
@@ -136,7 +140,6 @@ func (handler *UdpHandler) SyncWithServerSeq(gameState *GameState) {
 		gameState.Ball = newGameState.Ball
 		gameState.Input = 0
 		fmt.Print("newseqT", newGameState.Seq)
-		// Update both paddles from the server
 		gameState.PaddleP1 = newGameState.PaddleP1
 		gameState.PaddleP2 = newGameState.PaddleP2
 		gameState.Score = newGameState.Score
